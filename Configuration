@@ -1,0 +1,48 @@
+Segue um Exemplo de Monitoramento para Asterisk usando Zabbix.
+Alguns caracateres 'x' dever ser substituidos de acordo com suas necessidades.
+Partimos do princípio que ja temos um servidor zabbix instalado e funcionando como esperado.
+
+#Chamadas ativas
+UserParameter=asterisk.activecalls,sudo -u zabbix sudo asterisk -rx 'core show channels'| grep --text -i 'active call'| cut -d ' ' -f1
+
+#Total de chamadas processadas
+UserParameter=asterisk.proccalls,sudo -u zabbix sudo /usr/sbin/asterisk -rx 'core show calls' | grep 'calls processed' | grep -Eo "[0-9]{1,999}"
+
+#Ramais monitorados
+UserParameter=asterisk.monitored,sudo -u zabbix sudo /usr/sbin/asterisk -rx 'sip show peers' | grep -Eo "Monitored:\ [0-9]{1,9}"
+
+#Ramais online
+UserParameter=asterisk.extensions_online,sudo -u zabbix sudo asterisk -rx "database show" | grep Registry | wc -l
+
+#Numero de chamadas por Fila
+UserParameter=asterisk.queue.xxx,sudo -u zabbix sudo asterisk -rx "queue show xxx" | grep "in call" | wc -l
+
+#Sinal dos chips em uma khomp
+UserParameter=asterisk.rx.0x,sudo -u zabbix sudo /usr/sbin/asterisk -rx 'khomp channels show verbose' | grep --text -i '1,00x' | gawk '{print $xx}' | cut -d '|' -f1
+
+#Aqui temos uma estrutura Shell com uma variável onde tratamos a saída com o retorno esperado ou zero, assim consigo tratar a condição dentro do Grafana
+#(if retorno valor=xxxx do 'A', else retorno valor=0 do 'B')
+UserParameter=asterisk.sipxxxx,numero=$(sudo -u zabbix sudo /usr/sbin/asterisk -rx 'sip show channels' | grep --text -i 'xxxx' | awk '{print $X}'); if [ "$numero" = xxxx ]; then echo "xxxx"; else echo "0"; fi
+
+#Uptime
+UserParameter=system.uptime2,uptime | cut -f4 -d ' '
+
+Requisitos
+Zabbix-Agente deve ser instalado no servidor Asterisk;
+
+CentOs = yum install zabbix-agent
+Debian = apt install zabbix-agent
+
+Configurar o IP do servidor zabbix no agent do Asterisk (que é para onde vamos mandar os dados de saida).
+Voce deve criar um usuário no servidor Asterisk (aqui foi usado "zabbix"), e dar permissões para executar comando.
+Nesse caso, edite sudoers no server Asterisk e permita o usuario zabbix a executar comandos sem necessidade de senha
+
+vi /etc/sudoers
+zabbix ALL=(ALL) NOPASSWD:ALL
+
+Após isso é só adicionar o itens no zabbix, com as chaves usadas em UserParameter (ex. asterisk.activecalls)
+E fazer os gráficos caso queira.
+Se alguem quiser fazer uma template e contribuir com a comunidade, sinta-se a vontade em ajudar.
+
+Espero ter contribuido pois encontrei vários tutoriais na net mas nenhum que atendensse plenamente e de fácil entendimento.
+Com UserParameter e um pouco de Shell, é possível monitorar várias situações.
