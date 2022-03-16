@@ -14,6 +14,9 @@ UserParameter=asterisk.monitored,sudo -u zabbix sudo /usr/sbin/asterisk -rx 'sip
 #Ramais online
 UserParameter=asterisk.extensions_online,sudo -u zabbix sudo asterisk -rx "database show" | grep Registry | wc -l
 
+#Registro SIP 
+UserParameter=ast.registry, sudo asterisk -rx "sip show registry" |  grep --text -i 'No Authentication'| cut -d ' ' -f1
+
 #Numero de chamadas por Fila
 UserParameter=asterisk.queue.xxx,sudo -u zabbix sudo asterisk -rx "queue show xxx" | grep "in call" | wc -l
 
